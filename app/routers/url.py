@@ -19,7 +19,7 @@ def create_short_url(url: schemas.URLCreate, db: Session= Depends(get_db)):
 
 
 @router.get("/{short_code}", response_model=schemas.URLResponse)
-def redirect_url(short_code: schemas.URLCreate, db: Session= Depends(get_db)):
+def redirect_url(short_code: str, db: Session= Depends(get_db)):
 
     db_url=  api.get_url_by_short_code(db,short_code)
     if db_url :
@@ -29,7 +29,7 @@ def redirect_url(short_code: schemas.URLCreate, db: Session= Depends(get_db)):
 
 @router.put("/{short_code}", response_model = schemas.URLResponse)
 def update_url(short_code: str, url: schemas.URLCreate, db: Session= Depends(get_db)):
-    db_url = api.update_url(db,url)
+    db_url = api.update_url(db,short_code,url.original_url)
     if not db_url :
         raise HTTPException(status_code=404, detail ="URL not found")
     return db_url
