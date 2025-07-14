@@ -23,7 +23,7 @@ def redirect_url(short_code: schemas.URLCreate, db: Session= Depends(get_db)):
 
     db_url=  api.get_url_by_short_code(db,short_code)
     if db_url :
-        return db_url
+        return api.increment_access_count(db,db_url)
     raise HTTPException(status_code=404, detail="URL not found")
 
 
