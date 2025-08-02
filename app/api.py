@@ -6,16 +6,32 @@ import json
 
 
 def create_url(db : Session , url: schemas.URLCreate):
-    short_code = generate_short_code()
+    while True:
+        short_code = generate_short_code()
+        # Check if this short_code already exists in the DB
+        existing = db.query(models.URL).filter(models.URL.short_url == short_code).first()
+        if not existing:
+            break  # Found a unique code
+
     db_url = models.URL(short_url=short_code, original_url = url.original_url)
     db.add(db_url)
     db.commit()
     db.refresh(db_url)
+    obj_dict = {
+            "id": db_url.id,
+            "short_url": db_url.short_url,
+            "original_url": db_url.original_url,
+            "access_count": db_url.access_count
+        }
+    redis_client.set(short_code,json.dumps(obj_dict))
     return db_url
 
 
 def get_url_by_short_code(db: Session, short_code: str):
-    cached_obj = redis_client.get(short_code)
+    try:
+        cached_obj = redis_client.get(short_code)
+    except Exception:
+        cached_obj = None
     if cached_obj:
         data = json.loads(cached_obj)
         return models.URL(**data)

@@ -23,7 +23,7 @@ def redirect_url(short_code: str, db: Session= Depends(get_db)):
 
     db_url=  api.get_url_by_short_code(db,short_code)
     if db_url :
-        return api.increment_access_count(db,db_url)
+        return api.increment_access_count(db,db.query(api.models.URL).filter(api.models.URL.short_url==short_code).first())
     raise HTTPException(status_code=404, detail="URL not found")
 
 
