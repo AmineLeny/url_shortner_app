@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status 
 from sqlalchemy.orm import Session
 from app import schemas,api,database
+from fastapi.responses import RedirectResponse
+
 
 router = APIRouter(prefix="/urls" , tags=["urls"] )
 
@@ -13,17 +15,21 @@ def get_db():
         db.close()
 
 
-@router.post("/", response_model=schemas.URLResponse)
+@router.post("/", response_model=schemas.URLResponse, status_code = status.HTTP_201_CREATED)
 def create_short_url(url: schemas.URLCreate, db: Session= Depends(get_db)):
     return api.create_url(db,url)
+@router.get("/")
+def get_all_urls(db : Session = Depends(get_db)):
+    original_to_short = db.query(api.models.URL).all()
 
-
-@router.get("/{short_code}", response_model=schemas.URLResponse)
+    return original_to_short
+@router.get("/{short_code}")
 def redirect_url(short_code: str, db: Session= Depends(get_db)):
 
     db_url=  api.get_url_by_short_code(db,short_code)
     if db_url :
-        return api.increment_access_count(db,db.query(api.models.URL).filter(api.models.URL.short_url==short_code).first())
+        api.increment_access_count(db,db.query(api.models.URL).filter(api.models.URL.short_url==short_code).first())
+        return RedirectResponse(db_url.original_url)
     raise HTTPException(status_code=404, detail="URL not found")
 
 
@@ -36,7 +42,7 @@ def update_url(short_code: str, url: schemas.URLCreate, db: Session= Depends(get
 
 
 @router.delete("/{short_code}")
-def delete_url(short_code : str, db: Session = Depends(get_db)):
+def delete_url(short_code : str, db: Session = Depends(get_db), status_code = status.HTTP_204_NO_CONTENT):
     db_url = api.delete_url(db,short_code)
     if not db_url:
         raise HTTPException(status_code=404, detail ="URL not found")

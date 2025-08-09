@@ -70,8 +70,7 @@ def update_url(db: Session , short_code: str , new_url: str):
 def delete_url(db: Session , short_code: str):
     db_url = get_url_by_short_code(db, short_code)
     if db_url:
-        db.delete(db_url)
+        db.delete(db.query(models.URL).filter(models.URL.short_url == db_url.short_url).first())
         db.commit()
         redis_client.delete(short_code)
-
     return db_url
